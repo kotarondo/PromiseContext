@@ -1,5 +1,7 @@
 # PromiseContext
 
+[![Build Status](https://travis-ci.org/kotarondo/PromiseContext.svg?branch=master)](https://travis-ci.org/kotarondo/PromiseContext)
+
 PromiseContext gives a useful asynchronous executing context.
 
 * easy chaining of executors
