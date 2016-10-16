@@ -1,0 +1,29 @@
+{
+  "name": "PromiseContext",
+  "version": "0.0.1",
+  "description": "",
+  "homepage": "http://github.com/kotarondo/PromiseContext",
+  "author": "Kotaro Endo <kotarondo@gmail.com>",
+  "license": "BSD-3-Clause",
+  "main": "PromiseContext.js",
+  "keywords": [
+    "JavaScript",
+    "Promise",
+    "subroutine", "call", "loop", "repeat"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kotarondo/PromiseContext.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kotarondo/PromiseContext/issues"
+  },
+  "engines": {
+    "node": ">=4.3.2"
+  },
+  "devDependencies": {},
+  "directories": {},
+  "scripts": {
+    "test": "./test/run-tests.sh"
+  }
+}
