@@ -1,7 +1,7 @@
 // Copyright (c) 2016, Kotaro Endo.
 // license: "BSD-3-Clause"
 
-// test README.md
+// test special labels ("" , 0)
 
 require('./harness')
 var PromiseContext = require('../PromiseContext');
@@ -14,14 +14,30 @@ var B = executor_template.bind(null, 'B');
 var C = executor_template.bind(null, 'C');
 var D = executor_template.bind(null, 'D');
 
-ctx.chain(A);
-ctx.call(function sub() {
+ctx.loop(0, function() {
+    ctx.chain(A);
+    ctx.loop("L2", function() {
+        ctx.call(0, function() {
+            ctx.break(0);
+        });
+        ctx.chain(C);
+        ctx.break();
+    });
     ctx.chain(B);
-    ctx.chain(C);
+    ctx.break();
 });
-ctx.chain(D);
+
+ctx.loop("", function() {
+    ctx.chain(C);
+    ctx.loop("L2", function() {
+        ctx.break("");
+    });
+    ctx.chain(D);
+    ctx.break();
+});
+
 ctx.end();
 
-expected_result = "valueD";
-expected_order = "<AA><BB><CC><DD>";
+expected_result = "valueC";
+expected_order = "<AA><CC><BB><CC>";
 order_separator = '';

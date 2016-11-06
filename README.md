@@ -16,28 +16,29 @@ practical usages can be found in FileOutputStream ...
 
 ## Basic
 
-Let A be a example executor below.
+Let A be an example executor below.
  
 ```javascript
 function A(resolve, reject){
-	console.log("in A");
+	console.log("in A")
 	setTimeout(function(){
-		resolve();
-		console.log("out A");
+		resolve()
+		console.log("out A")
 	}
-	, 100); // 100ms
+	, 100) // 100ms
 }
 ```
 
-Let B,C are executors similar to A.
+Let B and C are executors similar to A.
+
 In order to execute these executors in a row, do the following:
 
 ```javascript
-var ctx = new PromiseContext();
-ctx.chain(A);
-ctx.chain(B);
-ctx.chain(C);
-ctx.end();
+var ctx = new PromiseContext()
+ctx.chain(A)
+ctx.chain(B)
+ctx.chain(C)
+ctx.end()
 ```
 
 A is called asynchronously after ctx.end().
@@ -57,20 +58,20 @@ out C
 Following code is equivalent to the above code.
 
 ```javascript
-new PromiseContext().chain(A).chain(B).chain(C).end();
+new PromiseContext().chain(A).chain(B).chain(C).end()
 ```
 
 
 ## Catching an error or a rejection
 
-This is a same manner as Promise.
+Same manner as Promise.
 
 ```javascript
-ctx.chain(A);
+ctx.chain(A)
 ctx.catch(function(err){
 	// if A called 'reject(err)' instead of 'resolve()', 
 	// 'err' would hold the value rejected in A.
-});
+})
 ```
 
 
@@ -79,75 +80,69 @@ ctx.catch(function(err){
 Completion routines can be set as follows:
 
 ```javascript
-ctx.setCompletion(onFulfilled, onRejected);
+ctx.setCompletion(onFulfilled, onRejected)
 ```
 
 One of completion routines will be called after all the executors resolved.
 
 
-## Call subroutines
+## Subroutine
 
 ```javascript
-
-var ctx = new PromiseContext();
-ctx.chain(A);
+var ctx = new PromiseContext()
+ctx.chain(A)
 ctx.call(function sub(){
-	ctx.chain(B);
-	ctx.chain(C);
-});
-ctx.chain(D);
-ctx.end();
+	ctx.chain(B)
+	ctx.chain(C)
+})
+ctx.chain(D)
+ctx.end()
 ```
 
-This example obtains a similar results to chaining A,B,C,D,
-but the function 'sub' is called asynchronously after A is resolved.
+This example obtains the same result as ctx.chain(A).chain(B).chain(C).chain(D)
+although the function 'sub' is executed asynchronously after A is resolved.
 
-## Loop subroutine
+
+## Loop
 
 ```javascript
-var i=0;
+var i=0
 ctx.loop(function (){
-	ctx.chain(A);
-	ctx.chain(B);
-	if (++i == 5) ctx.break();
-});
+	ctx.chain(A)
+	ctx.chain(B)
+	if (++i == 3) ctx.break()
+})
 ```
 
-## Break a loop outside
+This example obtains the same result as ctx.chain(A).chain(B).chain(A).chain(B).chain(A).chain(B)
+although each iteration is executed asynchronously after the previous iteration is resolved.
 
-```javascript
-ctx.loop(function (){
-	ctx.chain(A);
-	ctx.catch(function (err){
-		ctx.chain(B);
-		ctx.break();
-	});
-});
-```
+
+## Break a labelled loop
 
 ```javascript
 ctx.loop('L1', function (){
-	ctx.chain(A);
-	var i=0;
+	ctx.chain(A)
+	var i=0
 	ctx.loop(function (){
-		ctx.chain(B);
+		ctx.chain(B)
 		ctx.catch(function (err){
-			ctx.break('L1');
-		});
-		if (++i == 5) ctx.break();
-	});
-});
+			ctx.break('L1') // break outer loop
+		})
+		if (++i == 5) ctx.break() // break inner loop
+	})
+})
 ```
 
 ## Continue a loop
 
 ```javascript
 ctx.loop(function (){
-	ctx.chain(A);
+	ctx.chain(A)
 	ctx.catch(function (err){
-		ctx.chain(B);
-		ctx.continue();
-	});
-	ctx.chain(C);
-});
+		ctx.chain(B)
+		ctx.continue()
+	})
+	ctx.chain(C)
+})
 ```

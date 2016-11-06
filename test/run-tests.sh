@@ -5,7 +5,13 @@
 FAILED=0
 SUCCESS=0
 
-for test in test/test*.js
+NAMEBASE=$1
+
+if [ -z "${NAMEBASE}" ]; then
+	NAMEBASE=test
+fi
+
+for test in test/${NAMEBASE}*.js
 do
 echo testing $test
 node $test

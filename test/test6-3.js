@@ -1,7 +1,7 @@
 // Copyright (c) 2016, Kotaro Endo.
 // license: "BSD-3-Clause"
 
-// test ctx.break() in ctx.loop()
+// test illegal break can be catched
 
 require('./harness')
 var PromiseContext = require('../PromiseContext');
@@ -14,20 +14,27 @@ var B = executor_template.bind(null, 'B');
 var C = executor_template.bind(null, 'C');
 var D = executor_template.bind(null, 'D');
 
-ctx.loop(function() {
+var i = 0;
+ctx.call(function() {
     ctx.chain(A);
     ctx.call(function() {
         ctx.chain(B);
-        ctx.break();
-        ctx.chain(D);
+        ctx.break(); // illegal
+        ctx.catch(function(err) {
+            cp("dont reach here");
+        });
+    });
+    ctx.catch(function(err) {
+        assertEquals(err.toString(), "Error: illegal break()");
+        cp("err");
     });
     ctx.chain(D);
-})
-ctx.catch(function(e) {
+});
+ctx.catch(function(err) {
     cp("dont reach here");
-})
+});
 ctx.end();
 
-expected_result = "valueB";
-expected_order = "<AA><BB>";
+expected_result = "valueD";
+expected_order = "<AA>err<DD>";
 order_separator = '';

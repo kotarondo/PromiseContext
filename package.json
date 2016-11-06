@@ -1,7 +1,7 @@
 {
   "name": "PromiseContext",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.1.0",
+  "description": "a useful asynchronous executing context",
   "homepage": "http://github.com/kotarondo/PromiseContext",
   "author": "Kotaro Endo <kotarondo@gmail.com>",
   "license": "BSD-3-Clause",
@@ -9,7 +9,7 @@
   "keywords": [
     "JavaScript",
     "Promise",
-    "subroutine", "call", "loop", "repeat"
+    "subroutine", "call", "loop", "break", "continue", "catch"
   ],
   "repository": {
     "type": "git",
@@ -21,8 +21,6 @@
   "engines": {
     "node": ">=4.3.2"
   },
-  "devDependencies": {},
-  "directories": {},
   "scripts": {
     "test": "./test/run-tests.sh"
   }

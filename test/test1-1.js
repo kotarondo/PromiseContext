@@ -1,12 +1,13 @@
 // Copyright (c) 2016, Kotaro Endo.
 // license: "BSD-3-Clause"
 
-var harness = require('./harness')
-var cp = harness.checkpoint;
+// test chain rejection
 
+require('./harness')
 var PromiseContext = require('../PromiseContext');
+
 var ctx = new PromiseContext();
-ctx.setCompletion(onFulfilled, onRejected);
+ctx.setCompletion(onFulfilledE, onRejectedE);
 
 ctx.chain(function(resolve, reject) {
     cp(1);
@@ -30,7 +31,7 @@ ctx.chain(function(resolve, reject) {
     cp(8);
 })
 
-.chain(function(resolve, reject) {
+ctx.chain(function(resolve, reject) {
     cp(9);
     setTimeout(function() {
         cp(10);
@@ -40,17 +41,8 @@ ctx.chain(function(resolve, reject) {
     cp(12);
 })
 
-ctx.end();
 cp('finished');
+ctx.end();
 
-function onFulfilled() {
-    console.log("NG: unexpected fulfillment");
-    process.exit(1);
-}
-
-function onRejected(err) {
-    harness.expected_order("finished,1,2,3,6,4,5");
-    harness.assertEquals(err, "err!!");
-    console.log("OK");
-    process.exit(0);
-}
+expected_error = "err!!";
+expected_order = "finished,1,2,3,6,4,5";

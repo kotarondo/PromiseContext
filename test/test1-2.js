@@ -1,17 +1,20 @@
 // Copyright (c) 2016, Kotaro Endo.
 // license: "BSD-3-Clause"
 
-var harness = require('./harness')
-var cp = harness.checkpoint;
+// test chain throwing error
 
+require('./harness')
 var PromiseContext = require('../PromiseContext');
+
 var ctx = new PromiseContext();
-ctx.setCompletion(onFulfilled, onRejected);
+ctx.setCompletion(onFulfilledE, onRejectedE);
 
 ctx.chain(function(resolve, reject) {
     cp(1);
     resolve();
     cp(2);
+    throw new Error(); // no effect because already resolved
+    cp(2.5);
 });
 
 ctx.chain(function(resolve, reject) {
@@ -22,7 +25,7 @@ ctx.chain(function(resolve, reject) {
         cp(5);
     }, 10);
     cp(6);
-    return Promise.reject("bad"); // causes nothing
+    return Promise.reject("please ignore this"); // causes nothing
 });
 
 ctx.chain(function(resolve, reject) {
@@ -31,7 +34,7 @@ ctx.chain(function(resolve, reject) {
     cp(8);
 })
 
-.chain(function(resolve, reject) {
+ctx.chain(function(resolve, reject) {
     cp(9);
     setTimeout(function() {
         cp(10);
@@ -41,17 +44,8 @@ ctx.chain(function(resolve, reject) {
     cp(12);
 })
 
-ctx.end();
 cp('finished');
+ctx.end();
 
-function onFulfilled() {
-    console.log("NG: unexpected fulfillment");
-    process.exit(1);
-}
-
-function onRejected(err) {
-    //harness.expected_order("finished,1,2,3,6,4,5,7");
-    harness.assertEquals(err, "SyntaxError: Unexpected token var");
-    console.log("OK");
-    process.exit(0);
-}
+expected_error = "SyntaxError: Unexpected token var";
+expected_order = "finished,1,2,3,6,4,5,7";

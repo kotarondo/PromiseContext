@@ -33,206 +33,283 @@
 
 'use strict'
 
-module.exports = class PromiseContext {
+class PromiseContext {
 
-    constructor() {
-        const ctx = this;
-        openContext(ctx);
+    constructor(value) {
+        this._promise = Promise.resolve(value);
+    }
+
+    getPromise() {
+        return this._promise;
+    }
+
+    then(reaction, catchReaction) {
+        enter_context(this);
+        this._used = true;
+        this._promise = this._promise.then(reaction, catchReaction);
+        return this;
     }
 
     chain(executor) {
-        const ctx = this;
-        chainContext(ctx, executor);
-        return this;
+        return this.then(() => new Promise(executor));
     }
 
-    loop(label, subroutine) {
-        if (label instanceof Function) {
-            subroutine = label;
-            label = null;
+    throw (error) {
+        return this.then(() => Promise.reject(error));
+    }
+
+    join(promise) {
+        if (promise instanceof PromiseContext || promise instanceof PromiseContextHolder) {
+            promise = promise.getPromise();
         }
-        const ctx = this;
-        chainContext(ctx, function(resolve, reject) {
-            const entry = {
-                label: label,
-                iterable: true,
-                subroutine: subroutine,
-            };
-            resolve = entry.resolve = bindPopStack(ctx, resolve, entry);
-            reject = entry.reject = bindPopStack(ctx, reject, entry);
-            pushStack(ctx, entry);
-            loopContext(ctx, resolve, reject, subroutine);
-        });
-        return this;
+        return this.then(() => promise);
+    }
+
+    sleep(msec) {
+        return this.then(value => new Promise(function(resolve) {
+            setTimeout(resolve, msec, value);
+        }));
     }
 
     call(label, subroutine) {
         if (label instanceof Function) {
             subroutine = label;
-            label = null;
+            label = void 0;
         }
         const ctx = this;
-        chainContext(ctx, function(resolve, reject) {
-            const entry = {
-                label: label,
-                iterable: false,
-            };
-            resolve = entry.resolve = bindPopStack(ctx, resolve, entry);
-            reject = entry.reject = bindPopStack(ctx, reject, entry);
-            pushStack(ctx, entry);
-            callContext(ctx, resolve, reject, subroutine);
-        });
-        return this;
-    }
-
-    catch (onRejected) {
-        const ctx = this;
-        catchContext(ctx, reason => new Promise(function(resolve, reject) {
-            callContext(ctx, resolve, reject, onRejected, reason);
+        return this.then(value => new Promise(function(resolve, reject) {
+            if (label !== void 0) {
+                const entry = {};
+                resolve = bind_pop_stack(ctx, resolve);
+                reject = bind_pop_stack(ctx, reject);
+                entry.label = label;
+                entry.resolve = resolve;
+                push_stack(ctx, entry);
+            }
+            call_context(ctx, resolve, reject, subroutine, value);
         }));
-        return this;
     }
 
-    throw (err) {
+    loop(label, subroutine) {
+        if (label instanceof Function) {
+            subroutine = label;
+            label = void 0;
+        }
         const ctx = this;
-        thenContext(ctx, () => Promise.reject(err));
-        return this;
+        return this.then(value => new Promise(function(resolve, reject) {
+            const entry = {};
+            resolve = bind_pop_stack(ctx, resolve);
+            reject = bind_pop_stack(ctx, reject);
+            entry.label = label;
+            entry.resolve = resolve;
+            entry.iterator = iterator;
+            push_stack(ctx, entry);
+            iterator(value);
+
+            function iterator(value) {
+                call_context(ctx, iterator, reject, subroutine, value)
+            }
+        }));
+    }
+
+    catch (subroutine) {
+        const ctx = this;
+        return this.then(null, reason => new Promise(function(resolve, reject) {
+            call_context(ctx, resolve, reject, subroutine, reason);
+        }));
     }
 
     break (label) {
-        const ctx = this;
-        if (!findStack(ctx, label, false)) {
-            throw new Error("unresolvable break statement");
+        enter_sub_context(this);
+        var entry = find_stack(this, label);
+        if (!entry) {
+            throw new Error("illegal break()");
         }
-        chainContext(ctx, function(resolve, reject) {
-            var entry = findStack(ctx, label, false);
-            ctx._stackTop = entry;
-            entry.resolve();
-        });
-        return this;
+        const ctx = this;
+        return this.then(value => new Promise(function(resolve, reject) {
+            ctx._stack_top = entry;
+            entry.resolve(value);
+        }));
     }
 
     continue (label) {
-        const ctx = this;
-        if (!findStack(ctx, label, true)) {
-            throw new Error("unresolvable continue statement");
+        enter_sub_context(this);
+        var entry = find_stack(this, label, true);
+        if (!entry) {
+            throw new Error("illegal continue()");
         }
-        chainContext(ctx, function(resolve, reject) {
-            var entry = findStack(ctx, label, true);
-            ctx._stackTop = entry;
-            loopContext(ctx, entry.resolve, entry.reject, entry.subroutine);
-        });
-        return this;
+        const ctx = this;
+        return this.then(value => new Promise(function(resolve, reject) {
+            ctx._stack_top = entry;
+            entry.iterator(value);
+        }));
     }
 
     setCompletion(onFulfilled, onRejected) {
-        const ctx = this;
-        if (ctx._isEnded) throw new Error("context is already ended");
-        ctx._onFulfilled = onFulfilled;
-        ctx._onRejected = onRejected;
+        enter_main_context(this);
+        this._onFulfilled = onFulfilled;
+        this._onRejected = onRejected;
         return this;
     }
 
     end() {
-        const ctx = this;
-        if (ctx._isEnded) throw new Error("context is already ended");
-        ctx._isEnded = true;
-        thenContext(ctx, ctx._onFulfilled, ctx._onRejected);
-        commitContext(ctx);
+        enter_main_context(this);
+        this._ended = true;
+        this._promise.then(this._onFulfilled, this._onRejected);
     }
 
 }
 
-function checkOpen(ctx) {
-    if (!ctx._promise) throw new Error("context is closed");
+function enter_context(ctx) {
+    if (ctx._in_sub_context) return;
+    if (ctx._ended) throw new Error("context is ended");
 }
 
-function checkClosed(ctx) {
-    if (ctx._promise) throw new Error("context is open");
+function enter_sub_context(ctx) {
+    if (!ctx._in_sub_context) throw new Error("not in a sub-context");
 }
 
-function openContext(ctx) {
-    checkClosed(ctx);
-    ctx._promise = new Promise(function(resolve) {
-        ctx._commit = resolve;
+function enter_main_context(ctx) {
+    if (ctx._in_sub_context) throw new Error("not in the main-context");
+    if (ctx._ended) throw new Error("context is ended");
+}
+
+function call_context(ctx, resolve, reject, subroutine, arg) {
+    const saved_promise = ctx._promise;
+    ctx._in_sub_context = true;
+    ctx._promise = new Promise(function(resolve, relect) {
+        ctx._start_sub_context = resolve;
     });
-}
-
-function abortContext(ctx) {
-    checkOpen(ctx);
-    ctx._promise = null;
-    ctx._commit = null;
-}
-
-function commitContext(ctx) {
-    checkOpen(ctx);
-    ctx._promise = null;
-    ctx._commit();
-}
-
-function chainContext(ctx, executor) {
-    checkOpen(ctx);
-    ctx._promise = ctx._promise.then(() => new Promise(executor));
-}
-
-function thenContext(ctx, onFulfilled, onRejected) {
-    checkOpen(ctx);
-    ctx._promise = ctx._promise.then(onFulfilled, onRejected);
-}
-
-function catchContext(ctx, onRejected) {
-    checkOpen(ctx);
-    ctx._promise = ctx._promise.catch(onRejected);
-}
-
-function callContext(ctx, resolve, reject, subroutine, arg) {
-    openContext(ctx);
     try {
-        subroutine(arg);
+        ctx._used = false;
+        var value = subroutine(arg);
+        if (!ctx._used) {
+            // if there is no chaining to this sub-context,
+            // resolve the returned value instead of passed arg
+            arg = value;
+        }
+        ctx._promise.then(resolve, reject);
+        ctx._start_sub_context(arg);
     } catch (e) {
-        abortContext(ctx);
         reject(e);
-        return;
     }
-    thenContext(ctx, resolve, reject);
-    commitContext(ctx);
+    ctx._in_sub_context = false;
+    ctx._promise = saved_promise;
+    ctx._start_sub_context = null;
 }
 
-function loopContext(ctx, resolve, reject, subroutine) {
-    resolve = function() {
-        callContext(ctx, resolve, reject, subroutine)
-    };
-    resolve();
+function push_stack(ctx, entry) {
+    entry.next = ctx._stack_top;
+    ctx._stack_top = entry;
 }
 
-function pushStack(ctx, entry) {
-    entry.next = ctx._stackTop;
-    ctx._stackTop = entry;
-}
-
-function bindPopStack(ctx, reactor, entry) {
+function bind_pop_stack(ctx, func) {
     return function(arg) {
-        if (ctx._stackTop != entry) {
-            throw new Error("assert: invalid stack state");
-        }
-        ctx._stackTop = entry.next;
-        reactor(arg);
+        ctx._stack_top = ctx._stack_top.next;
+        func(arg);
     };
 }
 
-function findStack(ctx, label, iterableOnly) {
-    var entry = ctx._stackTop;
+function find_stack(ctx, label, iterableOnly) {
+    var entry = ctx._stack_top;
     while (entry) {
-        if (iterableOnly && !entry.iterable) {
-            continue;
-        }
-        if (!label && entry.iterable) {
+        if (label === void 0 && entry.iterator) {
             break;
         }
-        if (label && label == entry.label) {
+        if (label === entry.label && (!iterableOnly || entry.iterator)) {
             break;
         }
         entry = entry.next;
     }
     return entry;
 }
+
+class PromiseContextHolder {
+    constructor() {
+        this._context = new PromiseContext();
+    }
+
+    getContext() {
+        return this._context;
+    }
+
+    setContext(ctx) {
+        if (!(ctx instanceof PromiseContext)) {
+            if (!(ctx instanceof PromiseContextHolder)) throw new Error("not a context");
+            ctx = ctx.getContext();
+        }
+        var old = this._context;
+        this._context = ctx;
+        ctx.join(old);
+        return old;
+    }
+
+    getPromise() {
+        this._context.getPromise();
+        return this;
+    }
+
+    then(reaction, catchReaction) {
+        this._context.then(reaction, catchReaction);
+        return this;
+    }
+
+    chain(executor) {
+        this._context.chain(executor);
+        return this;
+    }
+
+    throw (error) {
+        this._context.throw(error);
+        return this;
+    }
+
+    join(promise) {
+        this._context.join(promise);
+        return this;
+    }
+
+    sleep(msec) {
+        this._context.sleep(msec);
+        return this;
+    }
+
+    call(label, subroutine) {
+        this._context.call(label, subroutine);
+        return this;
+    }
+
+    loop(label, subroutine) {
+        this._context.loop(label, subroutine);
+        return this;
+    }
+
+    catch (subroutine) {
+        this._context.catch(subroutine);
+        return this;
+    }
+
+    break (label) {
+        this._context.break(label);
+        return this;
+    }
+
+    continue (label) {
+        this._context.continue(label);
+        return this;
+    }
+
+    setCompletion(onFulfilled, onRejected) {
+        this._context.setCompletion(onFulfilled, onRejected);
+        return this;
+    }
+
+    end() {
+        this._context.end();
+    }
+
+}
+
+PromiseContext.Holder = PromiseContextHolder;
+
+module.exports = PromiseContext;

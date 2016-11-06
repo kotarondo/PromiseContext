@@ -1,37 +1,37 @@
 // Copyright (c) 2016, Kotaro Endo.
 // license: "BSD-3-Clause"
 
-var harness = require('./harness')
-var cp = harness.checkpoint;
-var assertEquals = harness.assertEquals;
+// test resolving a Promise
 
+require('./harness')
 var PromiseContext = require('../PromiseContext');
+
 var ctx = new PromiseContext();
 ctx.setCompletion(onFulfilled, onRejected);
 
 ctx.chain(function(resolve, reject) {
     cp(1);
-    resolve(Promise.resolve(1));
+    resolve(Promise.resolve());
     cp(2);
 })
 
-.chain(function(resolve, reject) {
+ctx.chain(function(resolve, reject) {
     cp(101);
     resolve(Promise.reject(101));
     cp(102);
 })
 
-.chain(function(resolve, reject) {
+ctx.chain(function(resolve, reject) {
     cp("don't reach here");
     reject();
 })
 
-.catch(function(val) {
-    cp('t101');
+ctx.catch(function(val) {
+    cp('103');
     assertEquals(val, 101)
 })
 
-.chain(function(resolve, reject) {
+ctx.chain(function(resolve, reject) {
     cp(3);
     setTimeout(function() {
         cp(4);
@@ -39,7 +39,7 @@ ctx.chain(function(resolve, reject) {
             cp(5);
             setTimeout(function() {
                 cp(6);
-                resolve();
+                resolve("test-value");
                 cp(7);
             }, 10);
         }));
@@ -47,20 +47,12 @@ ctx.chain(function(resolve, reject) {
     }, 10);
 })
 
-.catch(function(val) {
+ctx.catch(function(val) {
     cp("don't reach here");
 })
 
-.end();
+ctx.end();
 cp('finished');
 
-function onFulfilled() {
-    harness.expected_order("finished,1,2,101,102,t101,3,4,5,8,6,7");
-    console.log("OK");
-    process.exit(0);
-}
-
-function onRejected(err) {
-    console.log("NG: unexpected reject: " + err);
-    process.exit(1);
-}
+expected_result = "test-value";
+expected_order = "finished,1,2,101,102,103,3,4,5,8,6,7";
