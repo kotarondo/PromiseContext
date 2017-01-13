@@ -1,6 +1,6 @@
 # PromiseContext
 
-[![Build Status](https://travis-ci.org/kotarondo/PromiseContext.svg?branch=master)](https://travis-ci.org/kotarondo/PromiseContext)
+[![Build Status](https://travis-ci.org/kotarondo/promise_context.svg?branch=master)](https://travis-ci.org/kotarondo/promise_context)
 
 PromiseContext gives a useful asynchronous executing context.
 
@@ -10,8 +10,6 @@ PromiseContext gives a useful asynchronous executing context.
 * subroutine can be looped
 * break/continue a loop
 * labelled break/continue
-
-practical usages can be found in FileOutputStream ...
 
 
 ## Basic
@@ -34,6 +32,7 @@ Let B and C are executors similar to A.
 In order to execute these executors in a row, do the following:
 
 ```javascript
+const PromiseContext = require("promise_context")
 var ctx = new PromiseContext()
 ctx.chain(A)
 ctx.chain(B)
