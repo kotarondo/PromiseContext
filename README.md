@@ -1,6 +1,7 @@
 # PromiseContext
 
 [![Build Status](https://travis-ci.org/kotarondo/promise_context.svg?branch=master)](https://travis-ci.org/kotarondo/promise_context)
+[![npm version](https://badge.fury.io/js/promise_context.svg)](https://badge.fury.io/js/promise_context)
 
 PromiseContext gives a useful asynchronous executing context.
 
