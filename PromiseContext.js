@@ -39,6 +39,10 @@ class PromiseContext {
         this._promise = Promise.resolve(value);
     }
 
+    static getCurrentContext() {
+        return currentContext;
+    }
+
     getPromise() {
         return this._promise;
     }
@@ -160,6 +164,8 @@ class PromiseContext {
 
 }
 
+var currentContext;
+
 function enter_context(ctx) {
     if (ctx._in_sub_context) return;
     if (ctx._ended) throw new Error("context is ended");
@@ -182,7 +188,9 @@ function call_context(ctx, resolve, reject, subroutine, arg) {
     });
     try {
         ctx._used = false;
+        currentContext = ctx;
         var value = subroutine(arg);
+        currentContext = void 0;
         if (!ctx._used) {
             // if there is no chaining to this sub-context,
             // resolve the returned value instead of passed arg
