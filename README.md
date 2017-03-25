@@ -1,7 +1,7 @@
 # PromiseContext
 
-[![Build Status](https://travis-ci.org/kotarondo/promise_context.svg?branch=master)](https://travis-ci.org/kotarondo/promise_context)
-[![npm version](https://badge.fury.io/js/promise_context.svg)](https://badge.fury.io/js/promise_context)
+[![Build Status](https://travis-ci.org/kotarondo/promise-context.svg?branch=master)](https://travis-ci.org/kotarondo/promise-context)
+[![npm version](https://badge.fury.io/js/promise-context.svg)](https://badge.fury.io/js/promise-context)
 
 PromiseContext gives a useful asynchronous executing context.
 
@@ -33,7 +33,7 @@ Let B and C are executors similar to A.
 In order to execute these executors in a row, do the following:
 
 ```javascript
-const PromiseContext = require("promise_context")
+const PromiseContext = require("promise-context")
 var ctx = new PromiseContext()
 ctx.chain(A)
 ctx.chain(B)

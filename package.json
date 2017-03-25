@@ -1,8 +1,8 @@
 {
-  "name": "promise_context",
-  "version": "0.1.2",
+  "name": "promise-context",
+  "version": "0.1.3",
   "description": "a useful asynchronous executing context",
-  "homepage": "http://github.com/kotarondo/promise_context",
+  "homepage": "http://github.com/kotarondo/promise-context",
   "author": "Kotaro Endo <kotarondo@gmail.com>",
   "license": "BSD-3-Clause",
   "main": "PromiseContext.js",
@@ -13,10 +13,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/kotarondo/promise_context.git"
+    "url": "https://github.com/kotarondo/promise-context.git"
   },
   "bugs": {
-    "url": "https://github.com/kotarondo/promise_context/issues"
+    "url": "https://github.com/kotarondo/promise-context/issues"
   },
   "engines": {
     "node": ">=4.3.2"
